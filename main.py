@@ -1,8 +1,9 @@
-from flask import Flask
-from flask_restful import  Api
+if __name__ == '__main__':
+    try:
+        from app import app
+        app.run(debug=True)
+    except ImportError:
+        raise ImportError("Could not import app")
 
-
-app = Flask(__name__)
-api = Api(app)
 
 
