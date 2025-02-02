@@ -7,8 +7,6 @@ import jwt
 from app import app
 
 
-
-
 class UserSignupSchema(Schema):
     name = fields.Str(required=True)
     email = fields.Email(required=True)
@@ -33,8 +31,39 @@ def validate_api_schema(schema):
                 return {'error': 'Invalid request', 'details': err.messages}, 400
             kwargs['validated_data'] = validated_data
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        # Check for token in the headers
+        if 'Authorization' in request.headers:
+            if 'Bearer' in request.headers['Authorization']:
+                token = request.headers['Authorization'].split(" ")[1]
+            else:
+                abort(401, message='Bearer prefix is required')
+
+        if not token:
+            abort(401, message="Token is missing")
+
+        try:
+            # Decode the token
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=[app.config['JWT_ALGORITHM']])
+        except jwt.ExpiredSignatureError:
+            abort(401, message="Token has expired")
+        except jwt.InvalidTokenError:
+            abort(401, message="Invalid token")
+
+        # Add the decoded token data (email in this case) to the request context
+        request.user = data['email']
+        return f(*args, **kwargs)
+
+    return decorated
 
 
 def generate_token(data):
@@ -45,11 +74,10 @@ def generate_token(data):
     """
     payload = {
         "email": data,
-        "exp": datetime.utcnow() + timedelta(minutes=3)
+        "exp": datetime.utcnow() + timedelta(minutes=30)
     }
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM'])
     return token
-
 
 
 def checking_password(password):
@@ -63,4 +91,3 @@ def checking_password(password):
         abort(400, message="Password must contain at least one lowercase letter")
     elif not any(char in '!@#$%^&*()_+-=' for char in password):
         abort(400, message="Password must contain at least one special character")
-
