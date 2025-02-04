@@ -51,13 +51,13 @@ class DataBaseManager:
             if not all([name, email, password, created_at]):
                 raise ValueError("Missing required fields: name, email, password, created_at")
             cursor.execute(
-                "INSERT INTO user_signup (name, email, created_at, modify_at) VALUES (%s, %s, %s, %s)",
-                (name, email, created_at, created_at)
+                "INSERT INTO user_signup (name, email, created_at) VALUES (%s, %s, %s)",
+                (name, email, created_at)
             )
             user_id = cursor.lastrowid
             cursor.execute(
-                "INSERT INTO User_password (user_id, password, created_at, modify_at) VALUES (%s, %s, %s)",
-                (user_id, password, created_at, created_at)
+                "INSERT INTO User_password (user_id, password, created_at) VALUES (%s, %s, %s)",
+                (user_id, password, created_at)
             )
             connection.commit()
 
@@ -79,30 +79,3 @@ class DataBaseManager:
         cursor.execute("SELECT * FROM user_signup WHERE id = %s", (user_id,))
         result = cursor.fetchall()
         return result
-
-    def update_user_details(self, **kwargs):
-        connection = self.connect()
-        cursor = connection.cursor()
-        cursor.execute("UPDATE user_signup SET name = %(name)s, email = %(email)s, modify_at = %(modify_at)s \
-         WHERE id = %(user_id)s", kwargs)
-        connection.commit()
-        cursor.close()
-        connection.close()
-
-    def deleting_signup_table(self, user_id):
-        connection = self.connect()
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM user_signup WHERE id = %s", (user_id,))
-        connection.commit()
-        cursor.close()
-        connection.close()
-
-    def deleting_password_table(self, user_id):
-        connection = self.connect()
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM user_password WHERE id=%s", (user_id,))
-        connection.commit()
-        cursor.close()
-        connection.close()
-
-

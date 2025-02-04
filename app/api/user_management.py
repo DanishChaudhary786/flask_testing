@@ -1,7 +1,6 @@
-from flask import jsonify
 from flask_restful import Resource, abort
 from app.Common.decorators import validate_api_schema, UserSignupSchema, UserLoginSchema, generate_token, \
-    checking_password, token_required
+    checking_password
 from datetime import datetime
 from app.Models.database import DataBaseManager
 from app import api, app
@@ -52,8 +51,8 @@ class UserLogin(Resource):
             abort(400, message="User does not exist")
 
 
+@api.route('/users/<int:user_id>', endpoint='UserDetails')
 class UserDetails(Resource):
-    @token_required
     def get(self, user_id):
         result = DataBaseManager().check_existing_user_with_user_id(user_id)
         if result:
@@ -66,33 +65,3 @@ class UserDetails(Resource):
             return result
         else:
             abort(404, message="User not found")
-
-    @validate_api_schema(UserSignupSchema)
-    @token_required
-    def put(self, user_id, **kwargs):
-        data = kwargs["validated_data"]
-        existing_user = DataBaseManager().check_existing_user_with_user_id(user_id)
-        if existing_user:
-            if data['password']:
-                checking_password(data['password'])
-            modify_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            data['user_id'] = user_id
-            data['modify_at'] = modify_at
-            DataBaseManager().update_user_details(**data)
-            return {"message": "Data updated"}, 201
-        else:
-            abort(404, message='User not found')
-
-    @token_required
-    def delete(self, user_id):
-        existing_user = DataBaseManager().check_existing_user_with_user_id(user_id)
-        if existing_user:
-            DataBaseManager().deleting_signup_table(user_id)
-            DataBaseManager().deleting_password_table(user_id)
-            return {"message": "Data is deleted"}, 200
-        else:
-            abort(404, message="User not found")
-
-
-
-api.add_resource(UserDetails, '/users/<int:user_id>', endpoint='UserDetails')
